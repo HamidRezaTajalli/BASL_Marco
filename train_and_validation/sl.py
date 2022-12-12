@@ -513,13 +513,16 @@ def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp
         corrects_history['validation'].append(validation_corrects)
         corrects_history['test'].append(test_corrects)
         corrects_history['backdoor_test'].append(bd_test_corrects)
-        if not inject:
-            if early_stop:
-                inject = True
-        else:
-            if early_stop:
-                print("Early Stopping")
-                break
+        # if not inject:
+        #     if early_stop:
+        #         inject = True
+        # else:
+        #     if early_stop:
+        #         print("Early Stopping")
+        #         break
+        if early_stop:
+            print("Early Stopping")
+            break
 
     # corrects_max = {key: max(value) for key, value in corrects_history.items()}
     corrects_max = {key: value[-1] for key, value in corrects_history.items()}
