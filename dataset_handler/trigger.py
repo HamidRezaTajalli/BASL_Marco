@@ -3,9 +3,12 @@ import math
 import matplotlib.pyplot as plt
 
 import torch
+
 torch.manual_seed(47)
 import numpy as np
+
 np.random.seed(47)
+
 
 def poison(img, trigger_obj, trig_ds, bd_opacity):
     """Poison the training samples by stamping the trigger."""
@@ -238,8 +241,6 @@ class GenerateTrigger:
         cv2.imwrite(filename, img)
 
 
-
-
 def get_bd_set(dataset, trigger_obj, trig_ds, samples_percentage, backdoor_label, bd_opacity=1.0):
     backdoored_ds = []
     samples_index = []
@@ -296,6 +297,7 @@ def get_backdoor_train_dataset(dataset, trigger_obj, trig_ds, samples_percentage
     # fig.savefig(f'{img_samples_path}/ImgSample_{experiment_name}.jpeg', dpi=500)
 
     return backdoored_ds
+
 
 def get_backdoor_test_dataset(dataset, trigger_obj, trig_ds, backdoor_label, bd_opacity=1.0):
     backdoored_ds = []

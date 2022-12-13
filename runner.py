@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 datasets = ['mnist', 'cifar10', 'fmnist']
 models = ['resnet9', 'lenet', 'stripnet']
@@ -8,7 +9,7 @@ num_clients_list = [1, 3, 5, 7]
 fixed_alpha = True
 tb_inj = False
 alpha_list = [0.5, 0.2, 0.09, 0.06, 0.04]
-save_path = '.'
+save_path = '/home/nfs/oersoy/Behrad/BASL_IDEA4'
 
 for dataset in datasets:
     for model in models:
@@ -16,6 +17,6 @@ for dataset in datasets:
             for cut_layer in cut_layers:
                 for exp_num in range(num_of_exp):
                     for alpha in alpha_list:
-                        command = f"python3 main.py --dataname {dataset} --model {model} --exp_num {exp_num} --cutlayer {cut_layer} --num_clients {num_clients} --fixed_alpha --alpha {alpha}"
+                        command = f"python3 ./BASL_IDEA4/main.py --dataname {dataset} --model {model} --exp_num {exp_num} --cutlayer {cut_layer} --num_clients {num_clients} --fixed_alpha --save_path {save_path}"
                         os.system(command)
                     # !python3 main.py --dataname $dataset --model $model --exp_num $exp_num --cutlayer $cut_layer --num_clients $num_clients --fixed_alpha --alpha $alpha

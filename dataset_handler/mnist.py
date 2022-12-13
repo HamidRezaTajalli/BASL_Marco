@@ -178,7 +178,7 @@ def get_dataloaders_lbflip(batch_size, train_ds_num, drop_last, is_shuffle, flip
             'backdoor_test': backdoor_test_dataloader}, classes_names
 
 
-def get_dataloaders_backdoor(batch_size, train_ds_num, drop_last, is_shuffle, target_label, train_samples_percentage):
+def get_dataloaders_backdoor(batch_size, train_ds_num, drop_last, is_shuffle, target_label, trigger_obj):
     drop_last = drop_last
     batch_size = batch_size
     is_shuffle = is_shuffle
@@ -215,11 +215,11 @@ def get_dataloaders_backdoor(batch_size, train_ds_num, drop_last, is_shuffle, ta
     #                                                [int(len(train_dataset) / (8 / 1)),
     #                                                 int(len(train_dataset) / (8 / 7))])
 
-    trigger_obj = GenerateTrigger((8, 8), pos_label='upper-mid', dataset='mnist', shape='square')
+    # trigger_obj = GenerateTrigger((8, 8), pos_label='upper-mid', dataset='mnist', shape='square')
 
-    train_datasets[0] = get_backdoor_train_dataset(train_datasets[0], trigger_obj, trig_ds='mnist',
-                                                   samples_percentage=train_samples_percentage,
-                                                   backdoor_label=target_label)
+    # train_datasets[0] = get_backdoor_train_dataset(train_datasets[0], trigger_obj, trig_ds='mnist',
+    #                                                samples_percentage=train_samples_percentage,
+    #                                                backdoor_label=target_label)
 
     backdoor_test_dataset = get_backdoor_test_dataset(test_dataset, trigger_obj, trig_ds='mnist',
                                                       backdoor_label=target_label)

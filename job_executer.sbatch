@@ -13,7 +13,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --gres=gpu:v100:1
-#SBATCH --mem=16384
+#SBATCH --mem=32768
 
 #Job name
 ##SBATCH --job-name=ExpBkd_MODELNAME_Cora_Clean
@@ -58,7 +58,7 @@ previous=$(nvidia-smi --query-accounted-apps=gpu_utilization,mem_utilization,max
 
 
 
-##srun python3 ./BASL_IDEA4/main.py --dataname "cifar10" --model "resnet9" --exp_num 0 --cutlayer 1 --num_clients 1 --fixed_alpha
+##srun python3 ./BASL_Autoencoder/main.py --dataname "cifar10" --model "resnet9" --exp_num 0 --cutlayer 1 --num_clients 1 --fixed_alpha
 srun python3 ./main_direct.py
 
 
