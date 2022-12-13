@@ -19,6 +19,7 @@ batch_size = 128
 alpha_fixed = True
 bd_label = 0
 base_path = Path()
+smpl_prctg_list = [10, 25, 50]
 
 
 for dataset in datasets:
@@ -26,9 +27,13 @@ for dataset in datasets:
         for num_clients in num_clients_list:
             for cut_layer in cut_layers:
                 for exp_num in range(num_of_exp):
-                    sl.sl_training_procedure(tp_name=tp_name, dataset=dataset, arch_name=arch_name,
-                                             cut_layer=cut_layer,
-                                             base_path=base_path, exp_num=exp_num, batch_size=batch_size,
-                                             alpha_fixed=alpha_fixed,
-                                             num_clients=num_clients, bd_label=bd_label, tb_inj=tb_inj)
-                    gc.collect()
+                    for smpl_prctg in smpl_prctg_list:
+                        sl.sl_training_procedure(tp_name=tp_name, dataset=dataset, arch_name=arch_name,
+                                                 cut_layer=cut_layer,
+                                                 base_path=base_path, exp_num=exp_num, batch_size=batch_size,
+                                                 alpha_fixed=alpha_fixed,
+                                                 num_clients=num_clients, bd_label=bd_label, tb_inj=tb_inj,
+                                                 smpl_prctg=smpl_prctg)
+                        gc.collect()
+
+

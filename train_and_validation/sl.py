@@ -386,8 +386,10 @@ class SLTrainAndValidation:
 
                 trigger_samples = (smpl_prctg * len(inputs[phase])) // 100
                 samples_index = torch.from_numpy(
-                    np.random.choice(len(inputs[phase]), size=trigger_samples, replace=False)).to(self.device).detach()
+                    np.random.choice(len(inputs[phase]), size=trigger_samples, replace=False).astype(np.int64)).to(self.device).detach()
+
                 labels[phase][samples_index] = bd_label
+
 
                 for name, optimizer in self.optimizers.items():
                     if name.lower() not in ['client', 'autoencoder']:
@@ -398,13 +400,13 @@ class SLTrainAndValidation:
                 client_outputs = self.models['client'][client_num](inputs[phase])
 
                 cl_out_dtch = client_outputs.detach().clone()
-                print(cl_out_dtch.shape)
-                aut_outputs = self.models['autoencoder'](cl_out_dtch)
+                cl_out_injctd = cl_out_dtch.detach().clone()
+                cl_out_injctd[:, :, 0, 0] = 100.00
 
                 aut_mask = torch.zeros_like(cl_out_dtch)
                 aut_mask.index_fill_(0, samples_index, 1)
                 client_mask = 1 - aut_mask
-                server_inputs = aut_mask * aut_outputs + client_mask * cl_out_dtch
+                server_inputs = aut_mask * cl_out_injctd + client_mask * cl_out_dtch
                 server_inputs = server_inputs.detach().clone()
 
                 server_inputs.requires_grad_(True)
@@ -640,7 +642,7 @@ class SLTrainAndValidation:
 
 
 def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp_num, batch_size, alpha_fixed,
-                          num_clients, bd_label, tb_inj):
+                          num_clients, bd_label, tb_inj, smpl_prctg):
     img_samples_path = base_path.joinpath('img')
     if not img_samples_path.exists():
         img_samples_path.mkdir()
@@ -662,7 +664,7 @@ def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
     ds_load_dict = {'cifar10': cifar10, 'fmnist': fmnist, 'mnist': mnist}
-    trigger_obj = GenerateTrigger((8, 8), pos_label='upper-mid', dataset=dataset, shape='square')
+    trigger_obj = GenerateTrigger((4, 4), pos_label='upper-left', dataset=dataset, shape='square')
     dataloaders, classes_names = ds_load_dict[dataset].get_dataloaders_backdoor(batch_size=batch_size,
                                                                                 train_ds_num=num_clients + 1,
                                                                                 drop_last=False, is_shuffle=True,
@@ -887,7 +889,7 @@ def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp
                                                             inject=inject, alpha_dict=alpha_dict,
                                                             client_num=client_num,
                                                             bd_label=bd_label,
-                                                            smpl_prctg=25)
+                                                            smpl_prctg=smpl_prctg)
 
         trainer.lr_schedulers['server'].step()
         for lr_scheduler in trainer.lr_schedulers['client']:

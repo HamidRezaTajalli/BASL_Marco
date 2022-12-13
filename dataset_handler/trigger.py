@@ -161,7 +161,7 @@ class GenerateTrigger:
             for x in range(self.size[0]):
                 for y in range(self.size[1]):
                     trigger[base_x + x][base_y + y] = \
-                        np.random.random((self.dims[2]))
+                        np.ones((self.dims[2]))
         else:
             # The trigger that is used until now is a square so only one
             # dimension is enough for these calculations
@@ -182,7 +182,8 @@ class GenerateTrigger:
                 i = curr_x % self.dims[0]
                 for y in range(self.size[1]):
                     j = (y + curr_y) % self.dims[1]
-                    trigger[i][j] = np.random.random((self.dims[2]))
+                    # trigger[i][j] = np.random.random((self.dims[2]))
+                    trigger[i][j] = np.ones((self.dims[2]))
 
                 count += 1
 
