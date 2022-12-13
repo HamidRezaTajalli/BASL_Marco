@@ -36,7 +36,7 @@ from train_and_validation import sl, sl_simple
 datasets = ['mnist']
 models = ['resnet18']
 num_of_exp = 1
-cut_layers = [1, 2, 3]
+cut_layers = [3, 4, 5, 6]
 num_clients_list = [1, 3, 5, 7]
 tb_inj = True
 alpha_list = [0.04]

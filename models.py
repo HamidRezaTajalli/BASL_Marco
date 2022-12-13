@@ -255,10 +255,8 @@ class Resnet18(nn.Module):
         self.model.conv1 = nn.Conv2d(self.num_input_channels, self.model.conv1.out_channels,
                                      kernel_size=self.model.conv1.kernel_size, stride=self.model.conv1.stride,
                                      padding=self.model.conv1.padding, bias=False)
-        self.model.fc = nn.Linear(in_features=self.model.fc.in_features, out_features=self.num_classes)
-
-        if type(self.is_client) is not bool:
-            raise ValueError("PLEASE insert either True or False for the parameter: is_client")
+        self.model.fc = nn.Sequential(nn.Flatten(),
+                                      nn.Linear(in_features=self.model.fc.in_features, out_features=self.num_classes))
 
         self.model = nn.ModuleList(self.model.children())
         self.model = nn.Sequential(*self.model)
