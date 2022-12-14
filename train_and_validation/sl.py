@@ -24,13 +24,15 @@ np.random.seed(47)
 
 
 class SLTrainAndValidation:
-    def __init__(self, dataloaders, models, loss_fns, optimizers, lr_schedulers, early_stopping):
+    def __init__(self, dataloaders, models, loss_fns, optimizers, lr_schedulers, early_stopping, dataset, trigger_obj):
         self.dataloaders = dataloaders
         self.models = models
         self.loss_fns = loss_fns
         self.optimizers = optimizers
         self.lr_schedulers = lr_schedulers
         self.early_stopping = early_stopping
+        self.dataset = dataset
+        self.trigger_obj = trigger_obj
 
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -356,9 +358,10 @@ class SLTrainAndValidation:
 
         return epoch_loss
 
-    def train_loop(self, train_phase, ds_dicts, inject, alpha_dict, client_num, bd_label, smpl_prctg, is_malicious):
+    def train_loop(self, train_phase, ds_dicts, inject, alpha_dict, client_num, bd_label, smpl_prctg, is_malicious, save_path):
 
         phase = train_phase
+        clean_smsh, bd_smsh = None, None
 
         for name, model in self.models.items():
             if name.lower() not in ['client', 'autoencoder']:
@@ -378,17 +381,26 @@ class SLTrainAndValidation:
         inputs = {}
         labels = {}
 
-        '''Iterating over multiple dataloaders simultaneously'''
 
         if inject:
+            save_smsh = None
+            fwspth, bwspth = None, None
+            if (alpha_dict['epoch_num'] + 1) % 10 == 0:
+                save_smsh = True
+                fwspth = save_path.joinpath(alpha_dict['epoch_num'], 'FW')
+                bwspth = save_path.joinpath(alpha_dict['epoch_num'], 'BW')
+                if not fwspth.exists():
+                    fwspth.mkdir()
+                if not bwspth.exists():
+                    bwspth.mkdir()
+
             for phase_batch_num, phase_data in enumerate(self.dataloaders[phase][ds_dicts[phase]]):
                 inputs[phase], labels[phase] = phase_data[0].to(self.device), phase_data[1].to(self.device)
                 if is_malicious:
-                    backdoored_data = get_bd_set(dataset=phase_data, trigger_obj=trigger_obj, trig_ds=trig_ds,
+                    backdoored_data = get_bd_set(dataset=phase_data, trigger_obj=self.trigger_obj, trig_ds=self.dataset,
                                                  samples_percentage=smpl_prctg, backdoor_label=bd_label, bd_opacity=1.0)
                     inputs[phase], labels[phase] = backdoored_data[0].to(self.device), backdoored_data[1].to(
                         self.device)
-
 
                 for name, optimizer in self.optimizers.items():
                     if name.lower() not in ['client', 'autoencoder']:
@@ -398,16 +410,7 @@ class SLTrainAndValidation:
 
                 client_outputs = self.models['client'][client_num](inputs[phase])
 
-                cl_out_dtch = client_outputs.detach().clone()
-                cl_out_injctd = cl_out_dtch.detach().clone()
-                cl_out_injctd[:, :, 0, 0] = 100.00
-
-                aut_mask = torch.zeros_like(cl_out_dtch)
-                aut_mask.index_fill_(0, samples_index, 1)
-                client_mask = 1 - aut_mask
-                server_inputs = aut_mask * cl_out_injctd + client_mask * cl_out_dtch
-                server_inputs = server_inputs.detach().clone()
-
+                server_inputs = client_outputs.detach().clone()
                 server_inputs.requires_grad_(True)
                 server_outputs = self.models['server'](server_inputs)
 
@@ -421,6 +424,19 @@ class SLTrainAndValidation:
 
                 # client_outputs.backward(torch.mul(server_inputs.grad, torch.div(server_inputs, cl_out_dtch)))
                 client_outputs.backward(server_inputs.grad)
+
+                '''collecting the forward pass smsh data and backward pass gradients for further comparison'''
+
+                if alpha_dict['epoch_num'] // 10 == 0:
+                    if clean_smsh is None:
+                        clean_smsh = client_outputs
+                    else:
+                        clean_smsh = torch.cat((clean_smsh, client_outputs), dim=0)
+
+                    if bd_smsh is None:
+                        bd_smsh = server_inputs.grad
+                    else:
+                        bd_smsh = torch.cat((bd_smsh, server_inputs.grad), dim=0)
 
                 for name, optimizer in self.optimizers.items():
                     if name.lower() not in ['client', 'autoencoder']:
@@ -459,6 +475,13 @@ class SLTrainAndValidation:
             print(print_string)
 
             self.final_client_state_dict = self.models['client'][client_num].state_dict()
+            if save_smsh:
+                torch.save(clean_smsh, fwspth.joinpath(f'{client_num}.pt'))
+                torch.save(bd_smsh, bwspth.joinpath(f'{client_num}.pt'))
+
+            # TODO: here implement the storing of two tensors: the clean_smsh and the bd_smsh one first you should
+            #  check or create a path for them
+
             return epoch_loss, epoch_corrects
         else:
 
@@ -670,8 +693,7 @@ def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp
                                                                                 target_label=bd_label,
                                                                                 trigger_obj=trigger_obj)
 
-
-### Defining client models and printing their summaries ###################
+    ### Defining client models and printing their summaries ###################
 
     input_batch_shape = tuple(dataloaders['validation'].dataset[0][0].size())
 
@@ -687,34 +709,33 @@ def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp
     # print(f'client model object is successfully built, summary: \n')
     # summary(model=client_model, input_size=input_batch_shape, batch_size=dataloaders['validation'].batch_size)
 
-# ### Defining malicious client models and printing their summaries ###################
-#
-#     malicious_client_model1 = models.get_model(arch_name=arch_name, dataset=dataset, model_type='client',
-#                                                cut_layer=cut_layer).to(device)
-#     print('malicious client model 1 object is successfully built, summary: \n')
-#     summary(model=malicious_client_model1, input_size=input_batch_shape,
-#             batch_size=dataloaders['validation'].batch_size)
-#
-#     malicious_client_model2 = models.get_model(arch_name=arch_name, dataset=dataset, model_type='client',
-#                                                cut_layer=cut_layer).to(device)
-#     print('malicious client model 2 object is successfully built, summary: \n')
-#     summary(model=malicious_client_model2, input_size=input_batch_shape,
-#             batch_size=dataloaders['validation'].batch_size)
+    # ### Defining malicious client models and printing their summaries ###################
+    #
+    #     malicious_client_model1 = models.get_model(arch_name=arch_name, dataset=dataset, model_type='client',
+    #                                                cut_layer=cut_layer).to(device)
+    #     print('malicious client model 1 object is successfully built, summary: \n')
+    #     summary(model=malicious_client_model1, input_size=input_batch_shape,
+    #             batch_size=dataloaders['validation'].batch_size)
+    #
+    #     malicious_client_model2 = models.get_model(arch_name=arch_name, dataset=dataset, model_type='client',
+    #                                                cut_layer=cut_layer).to(device)
+    #     print('malicious client model 2 object is successfully built, summary: \n')
+    #     summary(model=malicious_client_model2, input_size=input_batch_shape,
+    #             batch_size=dataloaders['validation'].batch_size)
 
-# ### Defining Autoencoder and printing its summary ###################
-#     mal_out_sh = malicious_client_model1(
-#         torch.rand(size=(dataloaders['validation'].batch_size,) + input_batch_shape).to(device)).size()
-#     aut_enc_model = models.Autoencoder(base_channel_size=32, latent_dim=32 * 32, num_input_channels=mal_out_sh[1],
-#                                        width=mal_out_sh[2], height=mal_out_sh[3]).to(device)
-#     sample_cli_out = malicious_client_model1(
-#         torch.rand(size=(dataloaders['validation'].batch_size,) + input_batch_shape).to(device))
-#     aut_input_size = sample_cli_out.size()[1:]
-#     print('Autoencoder model is successfully built, summary: \n')
-#     summary(model=aut_enc_model, input_size=aut_input_size, batch_size=dataloaders['validation'].batch_size)
-#     if aut_enc_model(sample_cli_out).size() != sample_cli_out.size():
-#         raise ValueError(
-#             f'Autoencoder input and output shapes are not the same:\n feed input-->{sample_cli_out.size()} - received output-->{aut_enc_model(sample_cli_out).size()}')
-
+    # ### Defining Autoencoder and printing its summary ###################
+    #     mal_out_sh = malicious_client_model1(
+    #         torch.rand(size=(dataloaders['validation'].batch_size,) + input_batch_shape).to(device)).size()
+    #     aut_enc_model = models.Autoencoder(base_channel_size=32, latent_dim=32 * 32, num_input_channels=mal_out_sh[1],
+    #                                        width=mal_out_sh[2], height=mal_out_sh[3]).to(device)
+    #     sample_cli_out = malicious_client_model1(
+    #         torch.rand(size=(dataloaders['validation'].batch_size,) + input_batch_shape).to(device))
+    #     aut_input_size = sample_cli_out.size()[1:]
+    #     print('Autoencoder model is successfully built, summary: \n')
+    #     summary(model=aut_enc_model, input_size=aut_input_size, batch_size=dataloaders['validation'].batch_size)
+    #     if aut_enc_model(sample_cli_out).size() != sample_cli_out.size():
+    #         raise ValueError(
+    #             f'Autoencoder input and output shapes are not the same:\n feed input-->{sample_cli_out.size()} - received output-->{aut_enc_model(sample_cli_out).size()}')
 
     ##########################Defining Server model and printing its summary #################################
 
@@ -768,7 +789,6 @@ def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp
         #                                                         item))
         server_lr_scheduler = optim.lr_scheduler.LambdaLR(optimizer=server_optimizer,
                                                           lr_lambda=lambda item: models.lr_schedule(item))
-
 
     lr_schedulers = {'client': client_lr_schedulers, 'server': server_lr_scheduler}
 
@@ -862,8 +882,11 @@ def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp
     # ax.legend(loc='upper left')
     # fig.savefig(f'{plots_path}/Loss_{experiment_name}_autoencoder.jpeg', dpi=500)
 
+    mal_cl_indexs = np.random.choice(num_clients, size=num_mlcs_cls, replace=False)
+    exp_saving_dir = base_path.joinpath(f'{num_clients}clients', f'{mal_cl_indexs}')
+    if not exp_saving_dir.exists():
+        exp_saving_dir.mkdir()
 
-    mal_cl_index = np.random.choice(num_clients, size=num_mlcs_cls, replace=False)
 
     num_epochs = 140 if dataset.lower() == 'cifar10' else 100
     loss_history = {'train': [], 'validation': [], 'test': [], 'backdoor_test': []}
@@ -885,14 +908,14 @@ def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp
             print('+' * 50)
             print(f'training for client number {client_num}')
             print('+' * 50)
-            is_malicious = True if client_num in mal_cl_index else False
+            is_malicious = True if client_num in mal_cl_indexs else False
 
             train_loss, train_corrects = trainer.train_loop(train_phase='train',
                                                             ds_dicts={'train': client_num + 1},
                                                             inject=inject, alpha_dict=alpha_dict,
                                                             client_num=client_num,
                                                             bd_label=bd_label,
-                                                            smpl_prctg=smpl_prctg, is_malicious=is_malicious)
+                                                            smpl_prctg=smpl_prctg, is_malicious=is_malicious, save_path=exp_saving_dir)
 
         trainer.lr_schedulers['server'].step()
         for lr_scheduler in trainer.lr_schedulers['client']:
