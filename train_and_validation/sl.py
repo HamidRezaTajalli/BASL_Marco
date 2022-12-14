@@ -356,7 +356,7 @@ class SLTrainAndValidation:
 
         return epoch_loss
 
-    def train_loop(self, train_phase, ds_dicts, inject, alpha_dict, client_num, bd_label, smpl_prctg):
+    def train_loop(self, train_phase, ds_dicts, inject, alpha_dict, client_num, bd_label, smpl_prctg, is_malicious):
 
         phase = train_phase
 
@@ -383,12 +383,11 @@ class SLTrainAndValidation:
         if inject:
             for phase_batch_num, phase_data in enumerate(self.dataloaders[phase][ds_dicts[phase]]):
                 inputs[phase], labels[phase] = phase_data[0].to(self.device), phase_data[1].to(self.device)
-
-                trigger_samples = (smpl_prctg * len(inputs[phase])) // 100
-                samples_index = torch.from_numpy(
-                    np.random.choice(len(inputs[phase]), size=trigger_samples, replace=False).astype(np.int64)).to(self.device).detach()
-
-                labels[phase][samples_index] = bd_label
+                if is_malicious:
+                    backdoored_data = get_bd_set(dataset=phase_data, trigger_obj=trigger_obj, trig_ds=trig_ds,
+                                                 samples_percentage=smpl_prctg, backdoor_label=bd_label, bd_opacity=1.0)
+                    inputs[phase], labels[phase] = backdoored_data[0].to(self.device), backdoored_data[1].to(
+                        self.device)
 
 
                 for name, optimizer in self.optimizers.items():
@@ -642,7 +641,7 @@ class SLTrainAndValidation:
 
 
 def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp_num, batch_size, alpha_fixed,
-                          num_clients, bd_label, tb_inj, smpl_prctg):
+                          num_clients, bd_label, tb_inj, smpl_prctg, num_mlcs_cls):
     img_samples_path = base_path.joinpath('img')
     if not img_samples_path.exists():
         img_samples_path.mkdir()
@@ -863,6 +862,9 @@ def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp
     # ax.legend(loc='upper left')
     # fig.savefig(f'{plots_path}/Loss_{experiment_name}_autoencoder.jpeg', dpi=500)
 
+
+    mal_cl_index = np.random.choice(num_clients, size=num_mlcs_cls, replace=False)
+
     num_epochs = 140 if dataset.lower() == 'cifar10' else 100
     loss_history = {'train': [], 'validation': [], 'test': [], 'backdoor_test': []}
     corrects_history = {'train': [], 'validation': [], 'test': [], 'backdoor_test': []}
@@ -883,13 +885,14 @@ def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp
             print('+' * 50)
             print(f'training for client number {client_num}')
             print('+' * 50)
+            is_malicious = True if client_num in mal_cl_index else False
 
             train_loss, train_corrects = trainer.train_loop(train_phase='train',
                                                             ds_dicts={'train': client_num + 1},
                                                             inject=inject, alpha_dict=alpha_dict,
                                                             client_num=client_num,
                                                             bd_label=bd_label,
-                                                            smpl_prctg=smpl_prctg)
+                                                            smpl_prctg=smpl_prctg, is_malicious=is_malicious)
 
         trainer.lr_schedulers['server'].step()
         for lr_scheduler in trainer.lr_schedulers['client']:
