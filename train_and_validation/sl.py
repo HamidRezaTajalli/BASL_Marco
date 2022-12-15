@@ -387,12 +387,12 @@ class SLTrainAndValidation:
             fwspth, bwspth = None, None
             if (alpha_dict['epoch_num'] + 1) % 10 == 0:
                 save_smsh = True
-                fwspth = save_path.joinpath(alpha_dict['epoch_num'], 'FW')
-                bwspth = save_path.joinpath(alpha_dict['epoch_num'], 'BW')
+                fwspth = save_path.joinpath(str(alpha_dict['epoch_num']), 'FW')
+                bwspth = save_path.joinpath(str(alpha_dict['epoch_num']), 'BW')
                 if not fwspth.exists():
-                    fwspth.mkdir()
+                    fwspth.mkdir(parents=True)
                 if not bwspth.exists():
-                    bwspth.mkdir()
+                    bwspth.mkdir(parents=True)
 
             for phase_batch_num, phase_data in enumerate(self.dataloaders[phase][ds_dicts[phase]]):
                 inputs[phase], labels[phase] = phase_data[0].to(self.device), phase_data[1].to(self.device)
@@ -797,7 +797,7 @@ def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp
 
     trainer = SLTrainAndValidation(dataloaders=dataloaders, models=my_models,
                                    loss_fns=criterions, optimizers=optimizers,
-                                   lr_schedulers=lr_schedulers, early_stopping=early_stopping)
+                                   lr_schedulers=lr_schedulers, early_stopping=early_stopping, dataset=dataset, trigger_obj=trigger_obj)
     #
     # stp1_val_loss, stp1_val_crcts = None, None
     # smsh_Dataset = None
@@ -883,9 +883,9 @@ def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp
     # fig.savefig(f'{plots_path}/Loss_{experiment_name}_autoencoder.jpeg', dpi=500)
 
     mal_cl_indexs = np.random.choice(num_clients, size=num_mlcs_cls, replace=False)
-    exp_saving_dir = base_path.joinpath(f'{num_clients}clients', f'{mal_cl_indexs}')
+    exp_saving_dir = base_path.joinpath(f'{num_clients}clients', f'{"".join(str(x) for x in mal_cl_indexs.tolist())}')
     if not exp_saving_dir.exists():
-        exp_saving_dir.mkdir()
+        exp_saving_dir.mkdir(parents=True)
 
 
     num_epochs = 140 if dataset.lower() == 'cifar10' else 100
