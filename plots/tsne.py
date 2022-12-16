@@ -8,31 +8,31 @@ import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# %%
-
-(x_train, y_train), (_, _) = mnist.load_data()
-print(type(x_train))
-x_train = x_train[:3000]
-y_train = y_train[:3000]
-print(x_train.shape)
-
-print(x_train.shape)
-x_mnist = np.reshape(x_train, [x_train.shape[0], x_train.shape[1] * x_train.shape[2]])
-print(x_mnist.shape)
-
-# %%
-
-tsne = TSNE(n_components=2, verbose=1, random_state=123)
-z = tsne.fit_transform(x_mnist)
-df = pd.DataFrame()
-df["y"] = y_train
-df["comp-1"] = z[:, 0]
-df["comp-2"] = z[:, 1]
-
-sns.scatterplot(x="comp-1", y="comp-2", hue=df.y.tolist(),
-                palette=sns.color_palette("hls", 10),
-                data=df).set(title="MNIST data T-SNE projection")
-plt.savefig('scatt.jpeg', dpi=500)
+# # %%
+#
+# (x_train, y_train), (_, _) = mnist.load_data()
+# print(type(x_train))
+# x_train = x_train[:3000]
+# y_train = y_train[:3000]
+# print(x_train.shape)
+#
+# print(x_train.shape)
+# x_mnist = np.reshape(x_train, [x_train.shape[0], x_train.shape[1] * x_train.shape[2]])
+# print(x_mnist.shape)
+#
+# # %%
+#
+# tsne = TSNE(n_components=2, verbose=1, random_state=123)
+# z = tsne.fit_transform(x_mnist)
+# df = pd.DataFrame()
+# df["y"] = y_train
+# df["comp-1"] = z[:, 0]
+# df["comp-2"] = z[:, 1]
+#
+# sns.scatterplot(x="comp-1", y="comp-2", hue=df.y.tolist(),
+#                 palette=sns.color_palette("hls", 10),
+#                 data=df).set(title="MNIST data T-SNE projection")
+# plt.savefig('scatt.jpeg', dpi=500)
 
 
 # %%
@@ -57,17 +57,21 @@ def tsne_plot(address, num_of_clients):
         tsne = TSNE(perplexity=perplexity, n_components=2, verbose=1)
         z = tsne.fit_transform(smsh_stack)
         df = pd.DataFrame()
-        df["y"] = labels_stack
+        df["label"] = labels_stack
         df["comp-1"] = z[:, 0]
         df["comp-2"] = z[:, 1]
 
-    sns.scatterplot(x="comp-1", y="comp-2", hue=df.y.tolist(),
-                    palette=sns.color_palette("hls", 10),
-                    data=df).set(title="First Try")
-    plt.savefig(f'{address}/tsne.jpeg', dpi=500)
+        sns.scatterplot(x="comp-1", y="comp-2", hue='label',
+                        data=df).set(title="TSNE Plot")
+        plt.savefig(f'{address}/tsne_perplx{perplexity}.jpeg', dpi=500)
 
 
-for epoch_num in ['9', '19', '29', '39', '49', '59', '69', '79', '89', '99']:
+# for epoch_num in ['9', '19', '29', '39', '49', '59', '69', '79', '89', '99']:
+#     for mode in ['BW', 'FW']:
+#         address = f'./10clients/61/{epoch_num}/{mode}'
+#         tsne_plot(address, num_of_clients=10)
+
+for epoch_num in ['99']:
     for mode in ['BW', 'FW']:
         address = f'./10clients/61/{epoch_num}/{mode}'
         tsne_plot(address, num_of_clients=10)
