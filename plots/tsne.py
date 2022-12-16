@@ -37,10 +37,10 @@ plt.savefig('scatt.jpeg', dpi=500)
 
 # %%
 
-def tsne_plot(address):
+def tsne_plot(address, num_of_clients):
     smsh_dict = {}
     lbl_dict = {}
-    for item in range(10):
+    for item in range(num_of_clients):
         smsh_tensor = torch.load(address+f'/{item}.pt', map_location=torch.device('cpu'))
         smsh_tensor = smsh_tensor.numpy()
         smsh_tensor = np.reshape(smsh_tensor, [smsh_tensor.shape[0], -1])
@@ -51,20 +51,23 @@ def tsne_plot(address):
     labels_stack = [item for item in lbl_dict.values()]
     labels_stack = np.concatenate(labels_stack, axis=0)
 
-    tsne = TSNE(n_components=2, verbose=1)
-    z = tsne.fit_transform(smsh_stack)
-    df = pd.DataFrame()
-    df["y"] = labels_stack
-    df["comp-1"] = z[:, 0]
-    df["comp-2"] = z[:, 1]
+
+    perplexity_list = [35, 40, 45, 50]
+    for perplexity in perplexity_list:
+        tsne = TSNE(perplexity=perplexity, n_components=2, verbose=1)
+        z = tsne.fit_transform(smsh_stack)
+        df = pd.DataFrame()
+        df["y"] = labels_stack
+        df["comp-1"] = z[:, 0]
+        df["comp-2"] = z[:, 1]
 
     sns.scatterplot(x="comp-1", y="comp-2", hue=df.y.tolist(),
                     palette=sns.color_palette("hls", 10),
                     data=df).set(title="First Try")
-    plt.savefig('scatt.jpeg', dpi=500)
+    plt.savefig(f'{address}/tsne.jpeg', dpi=500)
 
 
 for epoch_num in ['9', '19', '29', '39', '49', '59', '69', '79', '89', '99']:
     for mode in ['BW', 'FW']:
         address = f'./10clients/61/{epoch_num}/{mode}'
-        tsne_plot(address)
+        tsne_plot(address, num_of_clients=10)
