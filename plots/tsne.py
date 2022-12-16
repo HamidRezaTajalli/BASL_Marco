@@ -8,6 +8,7 @@ import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
 # # %%
 #
 # (x_train, y_train), (_, _) = mnist.load_data()
@@ -41,7 +42,7 @@ def tsne_plot(address, num_of_clients):
     smsh_dict = {}
     lbl_dict = {}
     for item in range(num_of_clients):
-        smsh_tensor = torch.load(address+f'/{item}.pt', map_location=torch.device('cpu'))
+        smsh_tensor = torch.load(address + f'/{item}.pt', map_location=torch.device('cpu'))
         smsh_tensor = smsh_tensor.numpy()
         smsh_tensor = np.reshape(smsh_tensor, [smsh_tensor.shape[0], -1])
         smsh_dict[f'{item}'] = smsh_tensor
@@ -50,7 +51,6 @@ def tsne_plot(address, num_of_clients):
     smsh_stack = np.concatenate(smsh_stack, axis=0)
     labels_stack = [item for item in lbl_dict.values()]
     labels_stack = np.concatenate(labels_stack, axis=0)
-
 
     perplexity_list = [35, 40, 45, 50]
     for perplexity in perplexity_list:
