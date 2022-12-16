@@ -361,7 +361,7 @@ class SLTrainAndValidation:
     def train_loop(self, train_phase, ds_dicts, inject, alpha_dict, client_num, bd_label, smpl_prctg, is_malicious, save_path):
 
         phase = train_phase
-        clean_smsh, bd_smsh = None, None
+        clean_smsh, bd_smsh, lbl_stack = None, None, None
 
         for name, model in self.models.items():
             if name.lower() not in ['client', 'autoencoder']:
@@ -437,6 +437,10 @@ class SLTrainAndValidation:
                         bd_smsh = server_inputs.grad
                     else:
                         bd_smsh = torch.cat((bd_smsh, server_inputs.grad), dim=0)
+                    if lbl_stack is None:
+                        lbl_stack = labels[phase]
+                    else:
+                        lbl_stack = torch.cat((lbl_stack, labels[phase]), dim=0)
 
                 for name, optimizer in self.optimizers.items():
                     if name.lower() not in ['client', 'autoencoder']:
@@ -478,9 +482,7 @@ class SLTrainAndValidation:
             if save_smsh:
                 torch.save(clean_smsh, fwspth.joinpath(f'{client_num}.pt'))
                 torch.save(bd_smsh, bwspth.joinpath(f'{client_num}.pt'))
-
-            # TODO: here implement the storing of two tensors: the clean_smsh and the bd_smsh one first you should
-            #  check or create a path for them
+                torch.save(lbl_stack, save_path.joinpath(f'{client_num}_lbls.pt'))
 
             return epoch_loss, epoch_corrects
         else:
@@ -883,7 +885,7 @@ def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp
     # fig.savefig(f'{plots_path}/Loss_{experiment_name}_autoencoder.jpeg', dpi=500)
 
     mal_cl_indexs = np.random.choice(num_clients, size=num_mlcs_cls, replace=False)
-    exp_saving_dir = base_path.joinpath(f'{num_clients}clients', f'{"".join(str(x) for x in mal_cl_indexs.tolist())}')
+    exp_saving_dir = base_path.joinpath(experiment_name, f'{num_clients}clients', f'{"".join(str(x) for x in mal_cl_indexs.tolist())}')
     if not exp_saving_dir.exists():
         exp_saving_dir.mkdir(parents=True)
 
