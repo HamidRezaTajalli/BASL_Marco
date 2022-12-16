@@ -383,7 +383,7 @@ class SLTrainAndValidation:
 
 
         if inject:
-            save_smsh = None
+            save_smsh = False
             fwspth, bwspth = None, None
             if (alpha_dict['epoch_num'] + 1) % 10 == 0:
                 save_smsh = True
@@ -427,7 +427,7 @@ class SLTrainAndValidation:
 
                 '''collecting the forward pass smsh data and backward pass gradients for further comparison'''
 
-                if alpha_dict['epoch_num'] // 10 == 0:
+                if save_smsh:
                     if clean_smsh is None:
                         clean_smsh = client_outputs
                     else:
@@ -480,6 +480,8 @@ class SLTrainAndValidation:
 
             self.final_client_state_dict = self.models['client'][client_num].state_dict()
             if save_smsh:
+                if clean_smsh == None or bd_smsh == None:
+                    raise Exception('why clean_smsh or bd_smsh is None???')
                 torch.save(clean_smsh, fwspth.joinpath(f'{client_num}.pt'))
                 torch.save(bd_smsh, bwspth.joinpath(f'{client_num}.pt'))
                 torch.save(lbl_stack, save_path.joinpath(f'{client_num}_lbls.pt'))

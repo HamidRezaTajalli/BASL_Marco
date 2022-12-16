@@ -7,6 +7,7 @@ import numpy as np
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 
 # # %%
@@ -42,7 +43,11 @@ def tsne_plot(address, num_of_clients):
     smsh_dict = {}
     lbl_dict = {}
     for item in range(num_of_clients):
-        smsh_tensor = torch.load(address + f'/{item}.pt', map_location=torch.device('cpu'))
+        load_address = address.joinpath(f'{item}.pt')
+        if not load_address.exists():
+            raise Exception('Such a path does not exist')
+        smsh_tensor = torch.load(load_address, map_location=torch.device('cpu'))
+        print(smsh_tensor)
         smsh_tensor = smsh_tensor.numpy()
         smsh_tensor = np.reshape(smsh_tensor, [smsh_tensor.shape[0], -1])
         smsh_dict[f'{item}'] = smsh_tensor
@@ -71,7 +76,9 @@ def tsne_plot(address, num_of_clients):
 #         address = f'./10clients/61/{epoch_num}/{mode}'
 #         tsne_plot(address, num_of_clients=10)
 
-for epoch_num in ['99']:
+for epoch_num in ['9']:
     for mode in ['BW', 'FW']:
-        address = f'./10clients/61/{epoch_num}/{mode}'
+        address = Path().joinpath('10clients', '61', f'{epoch_num}', f'{mode}')
+        if not address.exists():
+            raise Exception('Path does not exist')
         tsne_plot(address, num_of_clients=10)
