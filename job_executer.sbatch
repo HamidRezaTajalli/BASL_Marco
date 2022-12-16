@@ -5,15 +5,15 @@
 #####################
 
 #SBATCH --partition=general
-#SBATCH --qos=long
-#SBATCH --time=7-0:00:00
+#SBATCH --qos=medium
+#SBATCH --time=0-10:00:00
 
 # 500MB memory per core
 # this is a hard limit
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --gres=gpu:v100:1
-#SBATCH --mem=32768
+#SBATCH --mem=16384
 
 #Job name
 ##SBATCH --job-name=ExpBkd_MODELNAME_Cora_Clean
@@ -22,7 +22,7 @@
 ##SBATCH --output=/tudelft.net/staff-umbrella/GS/Graph_Neural_Networks/Explanability_bkd_gnn_private/outputs/%x.%j.out
 
 module use /opt/insy/modulefiles
-module load cuda/11.2 cudnn/11.2-8.1.1.33
+module load cuda/11.4 cudnn/11.4-8.2.2.26
 module list
 ##conda activate projects
 source /home/nfs/oersoy/venv_projects/bin/activate
