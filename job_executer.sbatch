@@ -22,7 +22,7 @@
 ##SBATCH --output=/tudelft.net/staff-umbrella/GS/Graph_Neural_Networks/Explanability_bkd_gnn_private/outputs/%x.%j.out
 
 module use /opt/insy/modulefiles
-module load cuda/11.4 cudnn/11.4-8.2.2.26
+module load cuda/11.4 cudnn/11.4-8.2.2.26 miniconda/3.9
 module list
 ##conda activate projects
 source /home/nfs/oersoy/venv_projects/bin/activate
