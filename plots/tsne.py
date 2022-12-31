@@ -1,8 +1,6 @@
 import torch
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
-from keras.datasets import mnist
-from sklearn.datasets import load_iris
 import numpy as np
 import seaborn as sns
 import pandas as pd
