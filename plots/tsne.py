@@ -45,7 +45,7 @@ def tsne_plot(address, num_of_clients):
         if not load_address.exists():
             raise Exception('Such a path does not exist')
         smsh_tensor = torch.load(load_address, map_location=torch.device('cpu'))
-        print(smsh_tensor)
+        print(load_address)
         smsh_tensor = smsh_tensor.numpy()
         smsh_tensor = np.reshape(smsh_tensor, [smsh_tensor.shape[0], -1])
         smsh_dict[f'{item}'] = smsh_tensor
@@ -56,17 +56,51 @@ def tsne_plot(address, num_of_clients):
     labels_stack = np.concatenate(labels_stack, axis=0)
 
     perplexity_list = [35, 40, 45, 50]
+    n_iter_list = [1000, 2000]
     for perplexity in perplexity_list:
-        tsne = TSNE(perplexity=perplexity, n_components=2, verbose=1)
-        z = tsne.fit_transform(smsh_stack)
-        df = pd.DataFrame()
-        df["label"] = labels_stack
-        df["comp-1"] = z[:, 0]
-        df["comp-2"] = z[:, 1]
+        for n_iter in n_iter_list:
+            tsne = TSNE(n_components=2, perplexity=perplexity, n_iter=n_iter,  verbose=1)
+            z = tsne.fit_transform(smsh_stack)
+            df = pd.DataFrame()
+            df["label"] = labels_stack
+            df["comp-1"] = z[:, 0]
+            df["comp-2"] = z[:, 1]
 
-        sns.scatterplot(x="comp-1", y="comp-2", hue='label',
-                        data=df).set(title="TSNE Plot")
-        plt.savefig(f'{address}/tsne_perplx{perplexity}.jpeg', dpi=500)
+            sns.scatterplot(x="comp-1", y="comp-2", hue='label',
+                            data=df).set(title="TSNE Plot")
+            plt.savefig(f'{address}/tsne_perplx{perplexity}_niter{n_iter}.jpeg', dpi=500)
+
+
+def tsne_plot_per_client(smsh_address, lbl_address, num_of_clients):
+    smsh_dict = {}
+    lbl_dict = {}
+    for item in range(num_of_clients):
+        smsh_load_address = smsh_address.joinpath(f'{item}.pt')
+        lbl_load_address = lbl_address.joinpath(f'{item}_lbls.pt')
+        if not smsh_load_address.exists() or not lbl_load_address.exists():
+            raise Exception('Such a path does not exist')
+        smsh_tensor = torch.load(smsh_load_address, map_location=torch.device('cpu'))
+        labels_tensor = torch.load(lbl_load_address, map_location=torch.device('cpu'))
+        print(smsh_load_address, lbl_load_address)
+        smsh_tensor = smsh_tensor.numpy()
+        smsh_tensor = np.reshape(smsh_tensor, [smsh_tensor.shape[0], -1])
+        labels_tensor = labels_tensor.numpy()
+
+
+        perplexity_list = [35, 40, 45, 50]
+        n_iter_list = [1000, 2000]
+        for perplexity in perplexity_list:
+            for n_iter in n_iter_list:
+                tsne = TSNE(n_components=2, perplexity=perplexity, n_iter=n_iter,  verbose=1)
+                z = tsne.fit_transform(smsh_tensor)
+                df = pd.DataFrame()
+                df["label"] = labels_tensor
+                df["comp-1"] = z[:, 0]
+                df["comp-2"] = z[:, 1]
+
+                sns.scatterplot(x="comp-1", y="comp-2", hue='label',
+                                data=df).set(title="TSNE Plot")
+                plt.savefig(f'{smsh_address}/tsne_perplx{perplexity}_niter{n_iter}.jpeg', dpi=500)
 
 
 # for epoch_num in ['9', '19', '29', '39', '49', '59', '69', '79', '89', '99']:
@@ -76,7 +110,8 @@ def tsne_plot(address, num_of_clients):
 
 for epoch_num in ['9']:
     for mode in ['BW', 'FW']:
-        address = Path().joinpath('10clients', '61', f'{epoch_num}', f'{mode}')
-        if not address.exists():
+        smsh_address = Path().joinpath('10clients', '61', f'{epoch_num}', f'{mode}')
+        lbl_address = Path().joinpath('10clients', '61', f'{epoch_num}')
+        if not smsh_address.exists() or not lbl_address.exists():
             raise Exception('Path does not exist')
-        tsne_plot(address, num_of_clients=10)
+        tsne_plot_per_client(smsh_address=smsh_address, lbl_address=lbl_address, num_of_clients=10)

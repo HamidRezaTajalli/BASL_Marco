@@ -389,6 +389,9 @@ class SLTrainAndValidation:
                 save_smsh = True
                 fwspth = save_path.joinpath(str(alpha_dict['epoch_num']), 'FW')
                 bwspth = save_path.joinpath(str(alpha_dict['epoch_num']), 'BW')
+                lblspth = save_path.joinpath(str(alpha_dict['epoch_num']))
+                if not lblspth.exists():
+                    lblspth.mkdir(parents=True)
                 if not fwspth.exists():
                     fwspth.mkdir(parents=True)
                 if not bwspth.exists():
@@ -484,7 +487,7 @@ class SLTrainAndValidation:
                     raise Exception('why clean_smsh or bd_smsh is None???')
                 torch.save(clean_smsh, fwspth.joinpath(f'{client_num}.pt'))
                 torch.save(bd_smsh, bwspth.joinpath(f'{client_num}.pt'))
-                torch.save(lbl_stack, save_path.joinpath(f'{client_num}_lbls.pt'))
+                torch.save(lbl_stack, lblspth.joinpath(f'{client_num}_lbls.pt'))
 
             return epoch_loss, epoch_corrects
         else:
