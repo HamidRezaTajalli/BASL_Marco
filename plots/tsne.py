@@ -72,8 +72,7 @@ def tsne_plot(address, num_of_clients):
 
 
 def tsne_plot_per_client(smsh_address, lbl_address, num_of_clients):
-    smsh_dict = {}
-    lbl_dict = {}
+
     for item in range(num_of_clients):
         smsh_load_address = smsh_address.joinpath(f'{item}.pt')
         lbl_load_address = lbl_address.joinpath(f'{item}_lbls.pt')
@@ -114,4 +113,5 @@ for epoch_num in ['9']:
         lbl_address = Path().joinpath('10clients', '61', f'{epoch_num}')
         if not smsh_address.exists() or not lbl_address.exists():
             raise Exception('Path does not exist')
-        tsne_plot_per_client(smsh_address=smsh_address, lbl_address=lbl_address, num_of_clients=10)
+        tsne_plot(smsh_address, num_of_clients=10)
+        # tsne_plot_per_client(smsh_address=smsh_address, lbl_address=lbl_address, num_of_clients=10)
