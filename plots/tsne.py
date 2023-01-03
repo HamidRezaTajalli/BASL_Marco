@@ -35,6 +35,14 @@ from pathlib import Path
 # plt.savefig('scatt.jpeg', dpi=500)
 
 
+
+parser = argparse.ArgumentParser(description='BASL_Marco')
+parser.add_argument('--datadir', type=str, default='.',
+                    help='parent path to load and save required data')
+args = parser.parse_args()
+
+
+
 # %%
 
 def tsne_plot(address, num_of_clients):
@@ -107,11 +115,15 @@ def tsne_plot_per_client(smsh_address, lbl_address, num_of_clients):
 #         address = f'./10clients/61/{epoch_num}/{mode}'
 #         tsne_plot(address, num_of_clients=10)
 
-for epoch_num in ['9']:
-    for mode in ['BW', 'FW']:
-        smsh_address = Path().joinpath('10clients', '61', f'{epoch_num}', f'{mode}')
-        lbl_address = Path().joinpath('10clients', '61', f'{epoch_num}')
-        if not smsh_address.exists() or not lbl_address.exists():
-            raise Exception('Path does not exist')
-        tsne_plot(smsh_address, num_of_clients=10)
-        # tsne_plot_per_client(smsh_address=smsh_address, lbl_address=lbl_address, num_of_clients=10)
+def main():
+    for epoch_num in ['9']:
+        for mode in ['BW', 'FW']:
+            smsh_address = Path(args.datadir).joinpath('10clients', '61', f'{epoch_num}', f'{mode}')
+            lbl_address = Path(args.datadir).joinpath('10clients', '61', f'{epoch_num}')
+            if not smsh_address.exists() or not lbl_address.exists():
+                raise Exception('Path does not exist')
+            tsne_plot(smsh_address, num_of_clients=10)
+            # tsne_plot_per_client(smsh_address=smsh_address, lbl_address=lbl_address, num_of_clients=10)
+
+if __name__ == '__main__':
+    main()
