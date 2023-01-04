@@ -106,6 +106,8 @@ def tsne_plot(expname, address, num_of_clients, plt_mode: str):
 
                 # save
                 plt.savefig(f'{address}/{plt_mode}_tsne_perplx{perplexity}_niter{n_iter}_{expname}.jpeg', dpi=500)
+    else:
+        raise Exception(f"please insert correct required dimension: 2d or 3d. you have inserted {plt_mode}")
 
 
 def tsne_plot_per_client(expname, smsh_address, lbl_address, num_of_clients, plt_mode: str):
@@ -173,6 +175,8 @@ def tsne_plot_per_client(expname, smsh_address, lbl_address, num_of_clients, plt
                     plt.savefig(
                         f'{smsh_address}/{plt_mode}_tsne_perclient_perplx{perplexity}_niter{n_iter}_{expname}.jpeg',
                         dpi=500)
+        else:
+            raise Exception(f"please insert correct required dimension: 2d or 3d. you have inserted {plt_mode}")
 
 
 # for epoch_num in ['9', '19', '29', '39', '49', '59', '69', '79', '89', '99']:
