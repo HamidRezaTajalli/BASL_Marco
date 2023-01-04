@@ -1,14 +1,14 @@
 import torch
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.colors import ListedColormap
 from sklearn.manifold import TSNE
 import numpy as np
 import seaborn as sns
 import pandas as pd
-import matplotlib.pyplot as plt
 from pathlib import Path
 import argparse
-
-
+import time
 
 # # %%
 #
@@ -37,17 +37,9 @@ import argparse
 # plt.savefig('scatt.jpeg', dpi=500)
 
 
-
-parser = argparse.ArgumentParser(description='BASL_Marco')
-parser.add_argument('--datadir', type=str, default='.',
-                    help='parent path to load and save required data')
-args = parser.parse_args()
-
-
-
 # %%
 
-def tsne_plot(address, num_of_clients):
+def tsne_plot(expname, address, num_of_clients, plt_mode: str):
     smsh_dict = {}
     lbl_dict = {}
     for item in range(num_of_clients):
@@ -56,7 +48,7 @@ def tsne_plot(address, num_of_clients):
             raise Exception('Such a path does not exist')
         smsh_tensor = torch.load(load_address, map_location=torch.device('cpu'))
         print(load_address)
-        smsh_tensor = smsh_tensor.numpy()
+        smsh_tensor = smsh_tensor.detach().numpy()
         smsh_tensor = np.reshape(smsh_tensor, [smsh_tensor.shape[0], -1])
         smsh_dict[f'{item}'] = smsh_tensor
         lbl_dict[f'{item}'] = np.full(shape=smsh_tensor.shape[0], fill_value=item)
@@ -64,25 +56,59 @@ def tsne_plot(address, num_of_clients):
     smsh_stack = np.concatenate(smsh_stack, axis=0)
     labels_stack = [item for item in lbl_dict.values()]
     labels_stack = np.concatenate(labels_stack, axis=0)
+    # print(np.unique(labels_stack, return_counts=True))
 
-    perplexity_list = [35, 40, 45, 50]
-    n_iter_list = [1000, 2000]
-    for perplexity in perplexity_list:
-        for n_iter in n_iter_list:
-            tsne = TSNE(n_components=2, perplexity=perplexity, n_iter=n_iter,  verbose=1)
-            z = tsne.fit_transform(smsh_stack)
-            df = pd.DataFrame()
-            df["label"] = labels_stack
-            df["comp-1"] = z[:, 0]
-            df["comp-2"] = z[:, 1]
+    perplexity_list = [25, 30, 35, 40, 45]
+    n_iter_list = [1000]
+    if plt_mode.lower() == '2d':
+        for perplexity in perplexity_list:
+            for n_iter in n_iter_list:
+                tsne = TSNE(n_components=2, perplexity=perplexity, n_iter=n_iter, verbose=1)
+                z = tsne.fit_transform(smsh_stack)
+                df = pd.DataFrame()
+                df["label"] = labels_stack
+                df["comp-1"] = z[:, 0]
+                df["comp-2"] = z[:, 1]
 
-            sns.scatterplot(x="comp-1", y="comp-2", hue='label',
-                            data=df).set(title="TSNE Plot")
-            plt.savefig(f'{address}/tsne_perplx{perplexity}_niter{n_iter}.jpeg', dpi=500)
+                sns.scatterplot(x="comp-1", y="comp-2", hue='label',
+                                data=df, palette=sns.color_palette("Paired", num_of_clients), legend="brief").set(
+                    title="TSNE Plot")
+                plt.savefig(f'{address}/{plt_mode}_tsne_perplx{perplexity}_niter{n_iter}_{expname}.jpeg', dpi=500)
+    elif plt_mode.lower() == '3d':
+        for perplexity in perplexity_list:
+            for n_iter in n_iter_list:
+                tsne = TSNE(n_components=3, perplexity=perplexity, n_iter=n_iter, verbose=1)
+                z = tsne.fit_transform(smsh_stack)
+                df = pd.DataFrame()
+                df["label"] = labels_stack
+                df["comp-1"] = z[:, 0]
+                df["comp-2"] = z[:, 1]
+                df["comp-3"] = z[:, 2]
+
+                # axes instance
+                fig = plt.figure(figsize=(15, 10))
+                ax = Axes3D(fig, auto_add_to_figure=False)
+                fig.add_axes(ax)
+
+                # get colormap from seaborn
+                cmap = ListedColormap(sns.color_palette("Paired", num_of_clients).as_hex())
+
+                # plot
+                sc = ax.scatter3D(xs="comp-1", ys="comp-2", zs="comp-3", s=40, c="label", data=df, marker='o',
+                                  cmap=cmap,
+                                  edgecolors='white', alpha=1)
+                # ax.set_xlabel('X Label')
+                # ax.set_ylabel('Y Label')
+                # ax.set_zlabel('Z Label')
+
+                # legend
+                plt.legend(*sc.legend_elements(), bbox_to_anchor=(1.05, 1), loc=2)
+
+                # save
+                plt.savefig(f'{address}/{plt_mode}_tsne_perplx{perplexity}_niter{n_iter}_{expname}.jpeg', dpi=500)
 
 
-def tsne_plot_per_client(smsh_address, lbl_address, num_of_clients):
-
+def tsne_plot_per_client(expname, smsh_address, lbl_address, num_of_clients, plt_mode: str):
     for item in range(num_of_clients):
         smsh_load_address = smsh_address.joinpath(f'{item}.pt')
         lbl_load_address = lbl_address.joinpath(f'{item}_lbls.pt')
@@ -91,25 +117,62 @@ def tsne_plot_per_client(smsh_address, lbl_address, num_of_clients):
         smsh_tensor = torch.load(smsh_load_address, map_location=torch.device('cpu'))
         labels_tensor = torch.load(lbl_load_address, map_location=torch.device('cpu'))
         print(smsh_load_address, lbl_load_address)
-        smsh_tensor = smsh_tensor.numpy()
+        smsh_tensor = smsh_tensor.detach().numpy()
         smsh_tensor = np.reshape(smsh_tensor, [smsh_tensor.shape[0], -1])
-        labels_tensor = labels_tensor.numpy()
+        labels_tensor = labels_tensor.detach().numpy()
 
+        perplexity_list = [25, 30, 35, 40, 45]
+        n_iter_list = [1000]
+        if plt_mode.lower() == '2d':
+            for perplexity in perplexity_list:
+                for n_iter in n_iter_list:
+                    tsne = TSNE(n_components=2, perplexity=perplexity, n_iter=n_iter, verbose=1)
+                    z = tsne.fit_transform(smsh_tensor)
+                    df = pd.DataFrame()
+                    df["label"] = labels_tensor
+                    df["comp-1"] = z[:, 0]
+                    df["comp-2"] = z[:, 1]
 
-        perplexity_list = [35, 40, 45, 50]
-        n_iter_list = [1000, 2000]
-        for perplexity in perplexity_list:
-            for n_iter in n_iter_list:
-                tsne = TSNE(n_components=2, perplexity=perplexity, n_iter=n_iter,  verbose=1)
-                z = tsne.fit_transform(smsh_tensor)
-                df = pd.DataFrame()
-                df["label"] = labels_tensor
-                df["comp-1"] = z[:, 0]
-                df["comp-2"] = z[:, 1]
+                    sns.scatterplot(x="comp-1", y="comp-2", hue='label',
+                                    data=df, palette=sns.color_palette("Paired", len(np.unique(labels_tensor))),
+                                    legend="brief").set(title="TSNE Plot")
+                    plt.savefig(
+                        f'{smsh_address}/{plt_mode}_tsne_perclient_perplx{perplexity}_niter{n_iter}_{expname}.jpeg',
+                        dpi=500)
+        elif plt_mode.lower() == '3d':
+            for perplexity in perplexity_list:
+                for n_iter in n_iter_list:
+                    tsne = TSNE(n_components=3, perplexity=perplexity, n_iter=n_iter, verbose=1)
+                    z = tsne.fit_transform(smsh_tensor)
+                    df = pd.DataFrame()
+                    df["label"] = labels_tensor
+                    df["comp-1"] = z[:, 0]
+                    df["comp-2"] = z[:, 1]
+                    df["comp-3"] = z[:, 2]
 
-                sns.scatterplot(x="comp-1", y="comp-2", hue='label',
-                                data=df).set(title="TSNE Plot")
-                plt.savefig(f'{smsh_address}/tsne_perplx{perplexity}_niter{n_iter}.jpeg', dpi=500)
+                    # axes instance
+                    fig = plt.figure(figsize=(15, 10))
+                    ax = Axes3D(fig, auto_add_to_figure=False)
+                    fig.add_axes(ax)
+
+                    # get colormap from seaborn
+                    cmap = ListedColormap(sns.color_palette("Paired", len(np.unique(labels_tensor))).as_hex())
+
+                    # plot
+                    sc = ax.scatter3D(xs="comp-1", ys="comp-2", zs="comp-3", s=40, c="label", data=df, marker='o',
+                                      cmap=cmap,
+                                      edgecolors='white', alpha=1)
+                    # ax.set_xlabel('X Label')
+                    # ax.set_ylabel('Y Label')
+                    # ax.set_zlabel('Z Label')
+
+                    # legend
+                    plt.legend(*sc.legend_elements(), bbox_to_anchor=(1.05, 1), loc=2)
+
+                    # save
+                    plt.savefig(
+                        f'{smsh_address}/{plt_mode}_tsne_perclient_perplx{perplexity}_niter{n_iter}_{expname}.jpeg',
+                        dpi=500)
 
 
 # for epoch_num in ['9', '19', '29', '39', '49', '59', '69', '79', '89', '99']:
@@ -117,15 +180,4 @@ def tsne_plot_per_client(smsh_address, lbl_address, num_of_clients):
 #         address = f'./10clients/61/{epoch_num}/{mode}'
 #         tsne_plot(address, num_of_clients=10)
 
-def main():
-    for epoch_num in ['9']:
-        for mode in ['BW', 'FW']:
-            smsh_address = Path(args.datadir).joinpath('10clients', '61', f'{epoch_num}', f'{mode}')
-            lbl_address = Path(args.datadir).joinpath('10clients', '61', f'{epoch_num}')
-            if not smsh_address.exists() or not lbl_address.exists():
-                raise Exception('Path does not exist')
-            tsne_plot(smsh_address, num_of_clients=10)
-            # tsne_plot_per_client(smsh_address=smsh_address, lbl_address=lbl_address, num_of_clients=10)
 
-if __name__ == '__main__':
-    main()
