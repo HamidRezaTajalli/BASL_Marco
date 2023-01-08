@@ -58,7 +58,7 @@ def tsne_plot(expname, address, num_of_clients, plt_mode: str):
     labels_stack = np.concatenate(labels_stack, axis=0)
     # print(np.unique(labels_stack, return_counts=True))
 
-    perplexity_list = [25, 30, 35, 40, 45]
+    perplexity_list = [25, 30, 35, 40, 45, 50]
     n_iter_list = [1000]
     if plt_mode.lower() == '2d':
         for perplexity in perplexity_list:
@@ -123,7 +123,7 @@ def tsne_plot_per_client(expname, smsh_address, lbl_address, num_of_clients, plt
         smsh_tensor = np.reshape(smsh_tensor, [smsh_tensor.shape[0], -1])
         labels_tensor = labels_tensor.detach().numpy()
 
-        perplexity_list = [25, 30, 35, 40, 45]
+        perplexity_list = [25, 30, 35, 40, 45, 50]
         n_iter_list = [1000]
         if plt_mode.lower() == '2d':
             for perplexity in perplexity_list:
@@ -139,7 +139,7 @@ def tsne_plot_per_client(expname, smsh_address, lbl_address, num_of_clients, plt
                                     data=df, palette=sns.color_palette("Paired", len(np.unique(labels_tensor))),
                                     legend="brief").set(title="TSNE Plot")
                     plt.savefig(
-                        f'{smsh_address}/{plt_mode}_tsne_perclient_perplx{perplexity}_niter{n_iter}_{expname}.jpeg',
+                        f'{smsh_address}/{plt_mode}_tsne_perclient{item}_perplx{perplexity}_niter{n_iter}_{expname}.jpeg',
                         dpi=500)
         elif plt_mode.lower() == '3d':
             for perplexity in perplexity_list:
@@ -173,7 +173,7 @@ def tsne_plot_per_client(expname, smsh_address, lbl_address, num_of_clients, plt
 
                     # save
                     plt.savefig(
-                        f'{smsh_address}/{plt_mode}_tsne_perclient_perplx{perplexity}_niter{n_iter}_{expname}.jpeg',
+                        f'{smsh_address}/{plt_mode}_tsne_perclient{item}_perplx{perplexity}_niter{n_iter}_{expname}.jpeg',
                         dpi=500)
         else:
             raise Exception(f"please insert correct required dimension: 2d or 3d. you have inserted {plt_mode}")
