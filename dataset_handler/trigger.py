@@ -242,14 +242,19 @@ class GenerateTrigger:
         cv2.imwrite(filename, img)
 
 
-def get_bd_set(dataset, trigger_obj, trig_ds, samples_percentage, backdoor_label, bd_opacity=1.0):
-    backdoored_ds = []
-    samples_index = []
-    insert = None
+def get_bd_set(dataset, trigger_obj, trig_ds, samples_percentage, backdoor_label, origin_label=None, bd_opacity=1.0):
+
     data = dataset[0].detach().clone().cpu()
     labels = dataset[1].detach().clone().cpu()
-    trigger_samples = (samples_percentage * len(data)) // 100
-    samples_index = np.random.choice(len(data), size=trigger_samples, replace=False)
+
+    if origin_label is None:
+        trigger_samples = (samples_percentage * len(data)) // 100
+        samples_index = np.random.choice(len(data), size=trigger_samples, replace=False)
+    else:
+        selected_idxs = labels == origin_label  # select only the samples with the original label
+        selected_idxs = torch.argwhere(selected_idxs).squeeze()
+        trigger_samples = (samples_percentage * len(selected_idxs)) // 100
+        samples_index = np.random.choice(selected_idxs, size=trigger_samples, replace=False)
 
     for ind, item in enumerate(data):
         if ind in samples_index:
@@ -300,13 +305,23 @@ def get_backdoor_train_dataset(dataset, trigger_obj, trig_ds, samples_percentage
     return backdoored_ds
 
 
-def get_backdoor_test_dataset(dataset, trigger_obj, trig_ds, backdoor_label, bd_opacity=1.0):
+def get_backdoor_test_dataset(dataset, trigger_obj, trig_ds, backdoor_label, origin_label=None, bd_opacity=1.0):
     backdoored_ds = []
-    for ind, item in enumerate(dataset):
-        if item[1] != backdoor_label:
-            insert = (
-                torch.from_numpy(
-                    poison(item[0].cpu().permute(1, 2, 0).numpy(), trigger_obj, trig_ds, bd_opacity)).permute(
-                    2, 0, 1), backdoor_label)
-            backdoored_ds.append(insert)
+    if origin_label is None:
+        for ind, item in enumerate(dataset):
+            if item[1] != backdoor_label:
+                insert = (
+                    torch.from_numpy(
+                        poison(item[0].cpu().permute(1, 2, 0).numpy(), trigger_obj, trig_ds, bd_opacity)).permute(
+                        2, 0, 1), backdoor_label)
+                backdoored_ds.append(insert)
+    else:
+        for ind, item in enumerate(dataset):
+            if item[1] == origin_label:
+                insert = (
+                    torch.from_numpy(
+                        poison(item[0].cpu().permute(1, 2, 0).numpy(), trigger_obj, trig_ds, bd_opacity)).permute(
+                        2, 0, 1), backdoor_label)
+                backdoored_ds.append(insert)
+
     return backdoored_ds

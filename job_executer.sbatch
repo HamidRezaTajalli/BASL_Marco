@@ -25,7 +25,7 @@ module use /opt/insy/modulefiles
 module load cuda/11.4 cudnn/11.4-8.2.2.26 miniconda/3.9
 module list
 ##conda activate projects
-source /home/nfs/oersoy/venv_projects/bin/activate
+source /home/nfs/oersoy/AISY/bin/activate
 
 previous=$(nvidia-smi --query-accounted-apps=gpu_utilization,mem_utilization,max_memory_usage,time --format=csv | tail -n +2)
 
