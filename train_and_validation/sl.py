@@ -921,7 +921,7 @@ def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp
                                                             ds_dicts={'train': client_num + 1},
                                                             inject=inject, alpha_dict=alpha_dict,
                                                             client_num=client_num,
-                                                            bd_label=bd_label,
+                                                            bd_label=bd_label, origin_label=origin_label,
                                                             smpl_prctg=smpl_prctg, is_malicious=is_malicious, save_path=exp_saving_dir)
 
         trainer.lr_schedulers['server'].step()
