@@ -242,7 +242,7 @@ class GenerateTrigger:
         cv2.imwrite(filename, img)
 
 
-def get_bd_set(dataset, trigger_obj, trig_ds, samples_percentage, backdoor_label, origin_label=None, bd_opacity=1.0):
+def get_bd_set(dataset, trigger_obj, trig_ds, samples_percentage, backdoor_label, origin_label, bd_opacity=1.0):
 
     data = dataset[0].detach().clone().cpu()
     labels = dataset[1].detach().clone().cpu()
@@ -305,7 +305,7 @@ def get_backdoor_train_dataset(dataset, trigger_obj, trig_ds, samples_percentage
     return backdoored_ds
 
 
-def get_backdoor_test_dataset(dataset, trigger_obj, trig_ds, backdoor_label, origin_label=None, bd_opacity=1.0):
+def get_backdoor_test_dataset(dataset, trigger_obj, trig_ds, backdoor_label, origin_label, bd_opacity=1.0):
     backdoored_ds = []
     if origin_label is None:
         for ind, item in enumerate(dataset):

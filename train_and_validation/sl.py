@@ -358,7 +358,7 @@ class SLTrainAndValidation:
 
         return epoch_loss
 
-    def train_loop(self, train_phase, ds_dicts, inject, alpha_dict, client_num, bd_label, smpl_prctg, is_malicious, save_path):
+    def train_loop(self, train_phase, ds_dicts, inject, alpha_dict, client_num, bd_label, origin_label, smpl_prctg, is_malicious, save_path):
 
         phase = train_phase
         clean_smsh, bd_smsh, lbl_stack = None, None, None
@@ -401,7 +401,7 @@ class SLTrainAndValidation:
                 inputs[phase], labels[phase] = phase_data[0].to(self.device), phase_data[1].to(self.device)
                 if is_malicious:
                     backdoored_data = get_bd_set(dataset=phase_data, trigger_obj=self.trigger_obj, trig_ds=self.dataset,
-                                                 samples_percentage=smpl_prctg, backdoor_label=bd_label, bd_opacity=1.0)
+                                                 samples_percentage=smpl_prctg, backdoor_label=bd_label, origin_label=origin_label, bd_opacity=1.0)
                     inputs[phase], labels[phase] = backdoored_data[0].to(self.device), backdoored_data[1].to(
                         self.device)
 
@@ -671,7 +671,7 @@ class SLTrainAndValidation:
 
 
 def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp_num, batch_size, alpha_fixed,
-                          num_clients, bd_label, tb_inj, smpl_prctg, num_mlcs_cls):
+                          num_clients, bd_label, origin_label, tb_inj, smpl_prctg, num_mlcs_cls):
     img_samples_path = base_path.joinpath('img')
     if not img_samples_path.exists():
         img_samples_path.mkdir()
@@ -698,7 +698,7 @@ def sl_training_procedure(tp_name, dataset, arch_name, cut_layer, base_path, exp
                                                                                 train_ds_num=num_clients + 1,
                                                                                 drop_last=False, is_shuffle=True,
                                                                                 target_label=bd_label,
-                                                                                trigger_obj=trigger_obj)
+                                                                                trigger_obj=trigger_obj, origin_label=origin_label)
 
     ### Defining client models and printing their summaries ###################
 

@@ -19,6 +19,7 @@ tp_name = 'BASL_MARCO'
 batch_size = 128
 alpha_fixed = True
 bd_label = 0
+origin_label = 6
 base_path = Path()
 smpl_prctg_list = [100]
 
@@ -34,7 +35,7 @@ for dataset in datasets:
                                                      cut_layer=cut_layer,
                                                      base_path=base_path, exp_num=exp_num, batch_size=batch_size,
                                                      alpha_fixed=alpha_fixed,
-                                                     num_clients=num_clients, bd_label=bd_label, tb_inj=tb_inj,
+                                                     num_clients=num_clients, bd_label=bd_label, origin_label=origin_label, tb_inj=tb_inj,
                                                      smpl_prctg=smpl_prctg, num_mlcs_cls=num_mlcs_cls)
                             gc.collect()
 

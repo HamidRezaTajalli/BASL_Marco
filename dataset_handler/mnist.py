@@ -178,7 +178,7 @@ def get_dataloaders_lbflip(batch_size, train_ds_num, drop_last, is_shuffle, flip
             'backdoor_test': backdoor_test_dataloader}, classes_names
 
 
-def get_dataloaders_backdoor(batch_size, train_ds_num, drop_last, is_shuffle, target_label, trigger_obj):
+def get_dataloaders_backdoor(batch_size, train_ds_num, drop_last, is_shuffle, target_label, trigger_obj, origin_label):
     drop_last = drop_last
     batch_size = batch_size
     is_shuffle = is_shuffle
@@ -222,7 +222,7 @@ def get_dataloaders_backdoor(batch_size, train_ds_num, drop_last, is_shuffle, ta
     #                                                backdoor_label=target_label)
 
     backdoor_test_dataset = get_backdoor_test_dataset(test_dataset, trigger_obj, trig_ds='mnist',
-                                                      backdoor_label=target_label)
+                                                      backdoor_label=target_label, origin_label=origin_label)
 
     train_dataloaders = [torch.utils.data.DataLoader(dataset=train_datasets[i], batch_size=batch_size,
                                                      shuffle=is_shuffle, num_workers=num_workers,
